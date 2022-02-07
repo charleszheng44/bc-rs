@@ -1,6 +1,8 @@
 #![allow(unused)]
 
+use crate::macro_rules::*;
 use crate::parser::*;
+use anyhow::Result;
 
 struct Evaluator<'a> {
     parser: Parser<'a>,
@@ -29,8 +31,8 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn eval(&self) -> f64 {
-        Self::eval_ast(Box::new(self.parser.parse()))
+    fn eval(&mut self) -> Result<f64> {
+        Ok(Self::eval_ast(Box::new(self.parser.parse()?)))
     }
 }
 

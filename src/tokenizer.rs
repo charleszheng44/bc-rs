@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+use crate::parser::Operator;
+use anyhow::{anyhow, Error, Result};
 use std::iter::{Iterator, Peekable};
 
 pub struct Tokenizer<'a> {
@@ -17,6 +19,35 @@ pub enum Token {
     RightParen,
     Power,
     EOF,
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Add => write!(f, "Add"),
+            Self::Deduct => write!(f, "Deduct"),
+            Self::Multiply => write!(f, "Multiply"),
+            Self::Divide => write!(f, "Divide"),
+            Self::Num(n) => write!(f, "Num({})", n),
+            Self::LeftParen => write!(f, "LeftParen"),
+            Self::RightParen => write!(f, "RightParen"),
+            Self::Power => write!(f, "Power"),
+            Self::EOF => write!(f, "EOF"),
+        }
+    }
+}
+
+impl Token {
+    pub fn token_to_operator(&self) -> Result<Operator> {
+        match self {
+            Token::Add => Ok(Operator::Add),
+            Token::Deduct => Ok(Operator::Deduct),
+            Token::Multiply => Ok(Operator::Multiply),
+            Token::Divide => Ok(Operator::Divide),
+            Token::Power => Ok(Operator::Power),
+            _ => Err(anyhow!("TODO 0 {:?}", self)),
+        }
+    }
 }
 
 impl<'a> Tokenizer<'a> {

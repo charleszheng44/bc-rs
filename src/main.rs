@@ -1,3 +1,6 @@
+#[macro_use]
+mod macro_rules;
+
 mod evaluator;
 mod parser;
 mod tokenizer;
