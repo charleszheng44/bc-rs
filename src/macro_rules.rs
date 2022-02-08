@@ -30,13 +30,7 @@ macro_rules! some_num_ast {
     };
 }
 
-macro_rules! some_box_num_ast {
-    ($a: expr) => {
-        some_box!(num_ast!($a))
-    };
-}
-
-macro_rules! some_oper_ast_left {
+macro_rules! init_opt_oper_ast {
     ($o: expr, $l: expr) => {
         Some(AST {
             operator: Some($o),
@@ -46,7 +40,4 @@ macro_rules! some_oper_ast_left {
     };
 }
 
-pub(crate) use {
-    num_ast, oper_ast, some_box, some_box_num_ast, some_num_ast,
-    some_oper_ast_left,
-};
+pub(crate) use {init_opt_oper_ast, num_ast, oper_ast, some_box, some_num_ast};

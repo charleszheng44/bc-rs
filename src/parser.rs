@@ -92,6 +92,51 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_unit(
+        &mut self,
+        curr_ast: &mut Option<AST>,
+        unit: AST,
+    ) -> Result<()> {
+        let next_token: &Token;
+        match self.tokenizer.peek().unwrap() {
+            tk @ (Token::Add
+            | Token::Deduct
+            | Token::Multiply
+            | Token::Divide
+            | Token::Power) => next_token = tk,
+            Token::EOF => {
+                curr_ast.as_mut().unwrap().right_operand = some_box!(unit);
+                return Ok(());
+            }
+
+            Token::RightParen => {
+                curr_ast.as_mut().unwrap().right_operand = some_box!(unit);
+                return Ok(());
+            }
+
+            // invalid format
+            invalid_tk @ _ => {
+                return Err(anyhow!(
+                    "a number cannot followed by the Token::{}",
+                    invalid_tk
+                ));
+            }
+        }
+
+        let next_opr = next_token.token_to_operator()?;
+        let prev_opr = curr_ast.as_ref().unwrap().operator.as_ref().unwrap();
+        if *prev_opr < next_opr {
+            let mut tmp_ast = Some(unit);
+            self.gen_ast(&mut tmp_ast, false)?;
+            curr_ast.as_mut().unwrap().right_operand =
+                some_box!(tmp_ast.unwrap());
+            return Ok(());
+        }
+
+        curr_ast.as_mut().unwrap().right_operand = some_box!(unit);
+        Ok(())
+    }
+
     fn gen_ast(
         &mut self,
         curr_ast: &mut Option<AST>,
@@ -103,16 +148,17 @@ impl<'a> Parser<'a> {
                     if let None = curr_ast {
                         return Err(anyhow!("TODO 1"));
                     }
-                    *curr_ast = some_oper_ast_left!(
+                    *curr_ast = init_opt_oper_ast!(
                         Operator::Add,
                         curr_ast.as_ref().unwrap().clone()
                     );
                 }
+
                 Token::Deduct => {
                     if let None = curr_ast {
                         return Err(anyhow!("TODO 2"));
                     }
-                    *curr_ast = some_oper_ast_left!(
+                    *curr_ast = init_opt_oper_ast!(
                         Operator::Deduct,
                         curr_ast.as_ref().unwrap().clone()
                     );
@@ -122,7 +168,7 @@ impl<'a> Parser<'a> {
                     if let None = curr_ast {
                         return Err(anyhow!("TODO 3"));
                     }
-                    *curr_ast = some_oper_ast_left!(
+                    *curr_ast = init_opt_oper_ast!(
                         Operator::Multiply,
                         curr_ast.as_ref().unwrap().clone()
                     );
@@ -132,7 +178,7 @@ impl<'a> Parser<'a> {
                     if let None = curr_ast {
                         return Err(anyhow!("TODO 4"));
                     }
-                    *curr_ast = some_oper_ast_left!(
+                    *curr_ast = init_opt_oper_ast!(
                         Operator::Divide,
                         curr_ast.as_ref().unwrap().clone()
                     );
@@ -142,17 +188,25 @@ impl<'a> Parser<'a> {
                     if let None = curr_ast {
                         return Err(anyhow!("TODO 5"));
                     }
-                    *curr_ast = some_oper_ast_left!(
+                    *curr_ast = init_opt_oper_ast!(
                         Operator::Power,
                         curr_ast.as_ref().unwrap().clone()
                     );
                 }
 
                 Token::LeftParen => {
-                    todo!()
+                    let mut tmp_ast = None;
+                    self.gen_ast(&mut tmp_ast, true)?;
+                    self.parse_unit(curr_ast, tmp_ast.unwrap())?;
                 }
+
                 Token::RightParen => {
-                    todo!()
+                    if !in_parentheses {
+                        return Err(anyhow!(
+                            "met right parenthese without left parenthese"
+                        ));
+                    }
+                    return Ok(());
                 }
 
                 Token::Num(f) => {
@@ -161,44 +215,7 @@ impl<'a> Parser<'a> {
                         *curr_ast = some_num_ast!(f);
                         continue;
                     }
-
-                    let next_token: &Token;
-                    match self.tokenizer.peek().unwrap() {
-                        tk
-                        @
-                        (Token::Add
-                        | Token::Deduct
-                        | Token::Multiply
-                        | Token::Divide
-                        | Token::Power) => next_token = tk,
-                        Token::EOF => {
-                            curr_ast.as_mut().unwrap().right_operand =
-                                some_box_num_ast!(f);
-                            continue;
-                        }
-
-                        // invalid format
-                        invalid_tk @ _ => {
-                            return Err(anyhow!(
-                                "a number cannot followed by the Token::{}",
-                                invalid_tk
-                            ));
-                        }
-                    }
-
-                    let next_opr = next_token.token_to_operator()?;
-                    let prev_opr =
-                        curr_ast.as_ref().unwrap().operator.as_ref().unwrap();
-                    if *prev_opr < next_opr {
-                        let mut tmp_ast = some_num_ast!(f);
-                        self.gen_ast(&mut tmp_ast, false)?;
-                        curr_ast.as_mut().unwrap().right_operand =
-                            some_box!(tmp_ast.unwrap());
-                        continue;
-                    }
-
-                    curr_ast.as_mut().unwrap().right_operand =
-                        some_box_num_ast!(f);
+                    self.parse_unit(curr_ast, num_ast!(f))?;
                 }
 
                 Token::EOF => break,
@@ -252,6 +269,16 @@ mod test {
                 oper_ast!(Operator::Multiply, num_ast!(2.0), num_ast!(3.0))
             ),
             p_4.parse().unwrap()
+        );
+
+        let mut p_5 = Parser::new_parser("1 * (2 + 3)");
+        assert_eq!(
+            oper_ast!(
+                Operator::Multiply,
+                num_ast!(1.0),
+                oper_ast!(Operator::Add, num_ast!(2.0), num_ast!(3.0))
+            ),
+            p_5.parse().unwrap()
         );
     }
 }
