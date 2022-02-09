@@ -197,6 +197,10 @@ impl<'a> Parser<'a> {
                 Token::LeftParen => {
                     let mut tmp_ast = None;
                     self.gen_ast(&mut tmp_ast, true)?;
+                    if let None = curr_ast {
+                        *curr_ast = tmp_ast;
+                        continue;
+                    }
                     self.parse_unit(curr_ast, tmp_ast.unwrap())?;
                 }
 
@@ -218,7 +222,12 @@ impl<'a> Parser<'a> {
                     self.parse_unit(curr_ast, num_ast!(f))?;
                 }
 
-                Token::EOF => break,
+                Token::EOF => {
+                    if in_parentheses {
+                        return Err(anyhow!("met EOF in the parentheses"));
+                    }
+                    break;
+                }
             }
         }
         Ok(())
@@ -279,6 +288,30 @@ mod test {
                 oper_ast!(Operator::Add, num_ast!(2.0), num_ast!(3.0))
             ),
             p_5.parse().unwrap()
+        );
+
+        let mut p_6 = Parser::new_parser("(1 + 2) * 3");
+        assert_eq!(
+            oper_ast!(
+                Operator::Multiply,
+                oper_ast!(Operator::Add, num_ast!(1.0), num_ast!(2.0)),
+                num_ast!(3.0)
+            ),
+            p_6.parse().unwrap()
+        );
+
+        let mut p_7 = Parser::new_parser("3 ^ (1 * (2 + 3))");
+        assert_eq!(
+            oper_ast!(
+                Operator::Power,
+                num_ast!(3.0),
+                oper_ast!(
+                    Operator::Multiply,
+                    num_ast!(1.0),
+                    oper_ast!(Operator::Add, num_ast!(2.0), num_ast!(3.0))
+                )
+            ),
+            p_7.parse().unwrap()
         );
     }
 }
