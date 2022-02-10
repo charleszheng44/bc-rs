@@ -4,6 +4,7 @@ macro_rules! some_box {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! oper_ast {
     ($o: expr, $l: expr, $r: expr) => {
         AST {
@@ -40,4 +41,5 @@ macro_rules! init_opt_oper_ast {
     };
 }
 
+#[allow(unused_imports)]
 pub(crate) use {init_opt_oper_ast, num_ast, oper_ast, some_box, some_num_ast};

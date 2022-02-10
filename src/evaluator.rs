@@ -4,12 +4,12 @@ use crate::macro_rules::*;
 use crate::parser::*;
 use anyhow::Result;
 
-struct Evaluator<'a> {
+pub struct Evaluator<'a> {
     parser: Parser<'a>,
 }
 
 impl<'a> Evaluator<'a> {
-    fn new_evaluator(inp_expr: &'a str) -> Self {
+    pub fn new_evaluator(inp_expr: &'a str) -> Self {
         Evaluator {
             parser: Parser::new_parser(inp_expr),
         }
@@ -31,7 +31,7 @@ impl<'a> Evaluator<'a> {
         }
     }
 
-    fn eval(&mut self) -> Result<f64> {
+    pub fn eval(&mut self) -> Result<f64> {
         Ok(Self::eval_ast(Box::new(self.parser.parse()?)))
     }
 }
